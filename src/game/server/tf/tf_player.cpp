@@ -9806,7 +9806,28 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 	}
 
 	bool bIsPyroDetonateJumping = ( IsPlayerClass( TF_CLASS_PYRO ) && pAttacker == this && !(GetFlags() & FL_ONGROUND) && !(GetFlags() & FL_INWATER));
-	if ( bIsDemomanPipeJumping || bIsSoldierRocketJumping || bIsPyroDetonateJumping )
+
+
+	bool bIsEngiSentryJumping = false; //check for engineer sentry jumping
+	if (IsPlayerClass(TF_CLASS_ENGINEER)) //do not apply the standard ungrounded and not in water check here, as sentry rockets give enough knockback to reasonably be used without first jumping, and this could result in mirroring that feels buggy.
+	{
+		CObjectSentrygun* sentry = nullptr;
+		CTFProjectile_SentryRocket* sentryRocket = dynamic_cast<CTFProjectile_SentryRocket*>(info.GetInflictor());
+		if (sentryRocket) { //if it's a rocket, we find the sentry gun by getting its owner entity
+			sentry = dynamic_cast<CObjectSentrygun*>(sentryRocket->GetOwnerEntity());
+		}
+		else if(!(GetFlags() & FL_ONGROUND) && !(GetFlags() & FL_INWATER)) { //otherwise, the sentry gun is the inflictor entity. apply the airborne and not in water checks here, since sentry bullets are far weaker than rockets, and are more likley to self-damage unintentionally.
+			sentry = dynamic_cast<CObjectSentrygun*>(info.GetInflictor());
+		}
+
+		if (sentry) {
+			//only if the sentry has a shield on it, to prevent accidental self-damage from flinging the medic around.
+			//Checking for shield instead of m_bPlayerControlled, as the shield lingers for a bit, which will prevent buggy behavior if the engi puts away his wrangler before he is hit by the rocket.
+			bIsEngiSentryJumping = (sentry->GetOwner() == this) && (sentry->GetShieldLevel() != SHIELD_NONE);
+		}
+	}
+
+	if ( bIsDemomanPipeJumping || bIsSoldierRocketJumping || bIsPyroDetonateJumping || bIsEngiSentryJumping)
 	{
 		// Are we being healed by any QuickFix medics?
 		for ( int i = 0; i < m_Shared.m_nNumHealers; i++ )
