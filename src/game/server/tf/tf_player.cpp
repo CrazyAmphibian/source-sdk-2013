@@ -9816,7 +9816,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		if (sentryRocket) { //if it's a rocket, we find the sentry gun by getting its owner entity
 			sentry = dynamic_cast<CObjectSentrygun*>(sentryRocket->GetOwnerEntity());
 		}
-		else if(!(GetFlags() & FL_ONGROUND) && !(GetFlags() & FL_INWATER)) { //otherwise, the sentry gun is the inflictor entity. apply the airborne and not in water checks here, since sentry bullets are far weaker than rockets, and are more likley to self-damage unintentionally.
+		else if(!(GetFlags() & FL_ONGROUND) && !(GetFlags() & FL_INWATER)) { //otherwise, the sentry gun is the inflictor entity. apply the airborne and not in water checks here, since sentry bullets are far weaker than rockets, and are more likely to self-damage unintentionally.
 			sentry = dynamic_cast<CObjectSentrygun*>(info.GetInflictor());
 		}
 
@@ -10561,6 +10561,7 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	outParams.bPlayDamageReductionSound = false;
 	float realDamage = info.GetDamage();
 	int iPreFeignDamage = realDamage;
+	bool bIgnoreKnockbackImmunity = false;
 	if ( TFGameRules() )
 	{
 		realDamage = TFGameRules()->ApplyOnDamageAliveModifyRules( info, this, outParams );
@@ -10660,6 +10661,9 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 
 				pTFAttacker->AccumulateSentryGunDamageDealt( iOldHealth - flooredHealth );
 			}
+			if (sentry && (sentry->GetBuilder() == this) && (sentry->GetShieldLevel() != SHIELD_NONE) ) {
+				bIgnoreKnockbackImmunity = true;
+			}
 		}
 	}
 
@@ -10681,7 +10685,7 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 		   ( !pAttacker->IsSolidFlagSet( FSOLID_TRIGGER ) ) && 
 		   ( !m_Shared.InCond( TF_COND_DISGUISED ) ) )	
 		{
-			if ( !m_Shared.IsImmuneToPushback() || outParams.bSelfBlastDmg )
+			if ( !(m_Shared.IsImmuneToPushback() && !bIgnoreKnockbackImmunity) || outParams.bSelfBlastDmg )
 			{
 				ApplyPushFromDamage( info, vecDir );
 			}
