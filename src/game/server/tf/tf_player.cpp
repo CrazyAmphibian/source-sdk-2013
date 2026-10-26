@@ -9809,14 +9809,14 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 
 
 	bool bIsEngiSentryJumping = false; //check for engineer sentry jumping
-	if (IsPlayerClass(TF_CLASS_ENGINEER)) //do not apply the standard ungrounded and not in water check here, as sentry rockets give enough knockback to reasonably be used without first jumping, and this could result in mirroring that feels buggy.
+	if ( IsPlayerClass(TF_CLASS_ENGINEER) ) //do not apply the standard ungrounded and not in water check here, as sentry rockets give enough knockback to reasonably be used without first jumping, and this could result in mirroring that feels buggy.
 	{
 		CObjectSentrygun* sentry = nullptr;
-		CTFProjectile_SentryRocket* sentryRocket = dynamic_cast<CTFProjectile_SentryRocket*>(info.GetInflictor());
+		CTFProjectile_SentryRocket* sentryRocket = dynamic_cast<CTFProjectile_SentryRocket*>( info.GetInflictor() );
 		if (sentryRocket) { //if it's a rocket, we find the sentry gun by getting its owner entity
-			sentry = dynamic_cast<CObjectSentrygun*>(sentryRocket->GetOwnerEntity());
+			sentry = dynamic_cast<CObjectSentrygun*>( sentryRocket->GetOwnerEntity() );
 		}
-		else if(!(GetFlags() & FL_ONGROUND) && !(GetFlags() & FL_INWATER)) { //otherwise, the sentry gun is the inflictor entity. apply the airborne and not in water checks here, since sentry bullets are far weaker than rockets, and are more likely to self-damage unintentionally.
+		else if( !(GetFlags() & FL_ONGROUND) && !(GetFlags() & FL_INWATER) ) { //otherwise, the sentry gun is the inflictor entity. apply the airborne and not in water checks here, since sentry bullets are far weaker than rockets, and are more likely to self-damage unintentionally.
 			sentry = dynamic_cast<CObjectSentrygun*>(info.GetInflictor());
 		}
 
@@ -9827,7 +9827,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		}
 	}
 
-	if ( bIsDemomanPipeJumping || bIsSoldierRocketJumping || bIsPyroDetonateJumping || bIsEngiSentryJumping)
+	if ( bIsDemomanPipeJumping || bIsSoldierRocketJumping || bIsPyroDetonateJumping || bIsEngiSentryJumping )
 	{
 		// Are we being healed by any QuickFix medics?
 		for ( int i = 0; i < m_Shared.m_nNumHealers; i++ )
