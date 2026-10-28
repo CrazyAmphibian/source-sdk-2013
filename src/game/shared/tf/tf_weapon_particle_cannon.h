@@ -63,6 +63,7 @@ public:
 	virtual void	ModifyProjectile( CBaseEntity* pProj );
 
 	virtual void	PlayWeaponShootSound( void );
+	virtual void	ModifyEmitSoundParams( EmitSound_t& params );
 
 	virtual const char *GetMuzzleFlashParticleEffect( void );
 

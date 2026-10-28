@@ -301,6 +301,18 @@ void CTFParticleCannon::CreateChargeEffect()
 #endif
 
 //-----------------------------------------------------------------------------
+// Purpose: to change the pitch of the charged shot depending on firing speed.
+//-----------------------------------------------------------------------------
+void CTFParticleCannon::ModifyEmitSoundParams( EmitSound_t& params ){
+	BaseClass::ModifyEmitSoundParams( params );
+
+	if (V_strcmp( GetShootSound( SPECIAL1 ), params.m_pSoundName )==0 ) {
+		params.m_nPitch = PITCH_NORM * GetChargeMaxTime() / GetChargeForceReleaseTime();
+		params.m_nFlags |= SND_CHANGE_PITCH;
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CTFParticleCannon::FireChargedShot()
@@ -330,7 +342,7 @@ void CTFParticleCannon::FireChargedShot()
 	float flFireDelay = ApplyFireDelay( m_pWeaponInfo->GetWeaponData( m_iWeaponMode ).m_flTimeFireDelay );
 
 	m_flNextPrimaryAttack = gpGlobals->curtime + flFireDelay;
-	m_flNextSecondaryAttack = gpGlobals->curtime + flFireDelay;
+	m_flNextSecondaryAttack = gpGlobals->curtime + ApplyFireDelay(1.6f); //time equal to the length of the sound effect, minus 2 seconds (plus a bit of safety margin of error). a bit hacky, but if WeaponSound is fired with the same sound already playing it won't play. You might think to use StopWeaponSound before calling, but that results in no sound being played at all
 	
 	SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration() );
 
