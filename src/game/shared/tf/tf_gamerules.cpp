@@ -21579,6 +21579,39 @@ void CTFGameRules::PushAllPlayersAway( const Vector& vFromThisPoint, float flRan
 	}
 }
 
+// functions the same as PushAllPlayersAway, except that this will not move players who should be immune to knockback.
+void CTFGameRules::PushMovablePlayersAway( const Vector& vFromThisPoint, float flRange, float flForce, int nTeam, CUtlVector< CTFPlayer* >* pPushedPlayers /*= NULL*/ )
+{
+	CUtlVector< CTFPlayer* > playerVector;
+	CollectPlayers( &playerVector, nTeam, COLLECT_ONLY_LIVING_PLAYERS );
+
+	for (int i = 0; i < playerVector.Count(); ++i)
+	{
+		CTFPlayer* pPlayer = playerVector[i];
+
+		if ( pPlayer->m_Shared.IsImmuneToPushback() ) continue;
+
+		Vector toPlayer = pPlayer->EyePosition() - vFromThisPoint;
+
+		if (toPlayer.LengthSqr() < flRange * flRange)
+		{
+			// send the player flying
+			// make sure we push players up and away
+			toPlayer.z = 0.0f;
+			toPlayer.NormalizeInPlace();
+			toPlayer.z = 1.0f;
+
+			Vector vPush = flForce * toPlayer;
+
+			pPlayer->ApplyAbsVelocityImpulse( vPush );
+
+			if (pPushedPlayers)
+			{
+				pPushedPlayers->AddToTail( pPlayer );
+			}
+		}
+	}
+}
 #endif // GAME_DLL
 
 //-----------------------------------------------------------------------------
