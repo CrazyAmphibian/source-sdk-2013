@@ -21579,7 +21579,7 @@ void CTFGameRules::PushAllPlayersAway( const Vector& vFromThisPoint, float flRan
 	}
 }
 
-// functions the same as PushAllPlayersAway, except that this will not move players who should be immune to knockback.
+// functions the same as PushAllPlayersAway, except that this will account for player vulnerability/immunity/resistance to knockback.
 void CTFGameRules::PushMovablePlayersAway( const Vector& vFromThisPoint, float flRange, float flForce, int nTeam, CUtlVector< CTFPlayer* >* pPushedPlayers /*= NULL*/ )
 {
 	CUtlVector< CTFPlayer* > playerVector;
@@ -21601,7 +21601,10 @@ void CTFGameRules::PushMovablePlayersAway( const Vector& vFromThisPoint, float f
 			toPlayer.NormalizeInPlace();
 			toPlayer.z = 1.0f;
 
-			Vector vPush = flForce * toPlayer;
+			float fKnockbackScale = 1.0f;
+			CALL_ATTRIB_HOOK( float, fKnockbackScale, airblast_vulnerability_multiplier, pPlayer, NULL );
+
+			Vector vPush = flForce * toPlayer * fKnockbackScale;
 
 			pPlayer->ApplyAbsVelocityImpulse( vPush );
 

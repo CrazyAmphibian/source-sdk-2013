@@ -1017,7 +1017,7 @@ public:
 	virtual void ProcessVerboseLogOutput( void );
 
 	void PushAllPlayersAway( const Vector& vFromThisPoint, float flRange, float flForce, int nTeam, CUtlVector< CTFPlayer* > *pPushedPlayers = NULL );
-	// functions the same as PushAllPlayersAway, except that this will not move players who should be immune to knockback.
+	// functions the same as PushAllPlayersAway, except that this will account for player vulnerability/immunity/resistance to knockback.
 	void PushMovablePlayersAway( const Vector& vFromThisPoint, float flRange, float flForce, int nTeam, CUtlVector< CTFPlayer* > *pPushedPlayers = NULL );
 
 	bool ShouldDropSpellPickup();
