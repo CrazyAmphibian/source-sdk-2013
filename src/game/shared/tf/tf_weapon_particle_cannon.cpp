@@ -144,6 +144,40 @@ void CTFParticleCannon::WeaponReset( void )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: inturrupt reloading if we are trying to charge shot
+//-----------------------------------------------------------------------------
+void CTFParticleCannon::ItemBusyFrame( void ) {
+	CTFPlayer* pPlayer = ToTFPlayer( GetPlayerOwner() );
+	if ( (m_bInAttack2 || (pPlayer->m_nButtons & IN_ATTACK2) ) && CanPerformSecondaryAttack() ) {
+		//stop reloading if we are attempting to charge a shot
+		AbortReload();
+		m_flNextSecondaryAttack = gpGlobals->curtime; //immedietly try firing. this shouldn't be much of an issue because the charged shot has a very long windup time that ticks independantly of this var.
+		m_flNextPrimaryAttack = gpGlobals->curtime;
+		m_bInReload = false;
+		SetWeaponIdleTime( gpGlobals->curtime );
+		SecondaryAttack();
+		return;
+	}
+
+	BaseClass::ItemBusyFrame();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: prevent reloading when charging a shot
+//-----------------------------------------------------------------------------
+bool CTFParticleCannon::Reload( void ) {
+	//prevent reloading if we are charging a charged shot
+	if ( m_flChargeBeginTime > 0 ) {
+		return false;
+	}
+	//and prevent reloading if we are preparing to start to charge a shot
+	if ( (m_bInAttack2 || (ToTFPlayer( GetPlayerOwner() )->m_nButtons & IN_ATTACK2) ) && CanPerformSecondaryAttack() ) {
+		return false;
+	}
+	return BaseClass::Reload();
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CTFParticleCannon::ItemPostFrame( void )
@@ -190,12 +224,27 @@ void CTFParticleCannon::PrimaryAttack( void )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: check for ammo
+//-----------------------------------------------------------------------------
+bool CTFParticleCannon::CanPerformSecondaryAttack() {
+	if ( Energy_GetEnergy() < (4.f * Energy_GetShotCost()) )
+	{
+		return false;
+	}
+	if (m_flChargeBeginTime) {
+		return false;
+	}
+	return BaseClass::CanPerformSecondaryAttack();
+}
+
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CTFParticleCannon::SecondaryAttack( void )
 {
 	// Check for ammunition.
-	if ( !Energy_FullyCharged() )
+	if ( Energy_GetEnergy() < (4.f * Energy_GetShotCost()) )
 	{
 		Reload();
 		return;
@@ -281,12 +330,15 @@ void CTFParticleCannon::FireChargedShot()
 	float flFireDelay = ApplyFireDelay( m_pWeaponInfo->GetWeaponData( m_iWeaponMode ).m_flTimeFireDelay );
 
 	m_flNextPrimaryAttack = gpGlobals->curtime + flFireDelay;
-
+	m_flNextSecondaryAttack = gpGlobals->curtime + flFireDelay;
+	
 	SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration() );
 
-	m_iReloadMode.Set( TF_RELOAD_START );
-
 	m_flChargeBeginTime = 0.0f;
+
+	if (!Energy_GetEnergy()) {
+		Reload();
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -306,7 +358,7 @@ void CTFParticleCannon::ModifyProjectile( CBaseEntity* pProj )
 
 	if ( m_bChargedShot )
 	{
-		Energy_DrainEnergy( Energy_GetMaxEnergy() );
+		Energy_DrainEnergy( 4.f * Energy_GetShotCost() );
 	}
 	else
 	{
