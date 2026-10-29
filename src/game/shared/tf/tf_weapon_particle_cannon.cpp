@@ -350,18 +350,6 @@ void CTFParticleCannon::PlayChargeSound() {
 #endif
 
 //-----------------------------------------------------------------------------
-// Purpose: to change the pitch of the charged shot depending on firing speed.
-//-----------------------------------------------------------------------------
-void CTFParticleCannon::ModifyEmitSoundParams( EmitSound_t& params ){
-	BaseClass::ModifyEmitSoundParams( params );
-
-	if (V_strcmp( GetShootSound( SPECIAL1 ), params.m_pSoundName )==0 ) {
-		params.m_nPitch = PITCH_NORM * GetChargeMaxTime() / GetChargeForceReleaseTime();
-		params.m_nFlags |= SND_CHANGE_PITCH;
-	}
-}
-
-//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CTFParticleCannon::FireChargedShot()
