@@ -63,6 +63,22 @@ CTFParticleCannon::CTFParticleCannon() : CTFRocketLauncher()
 #ifdef CLIENT_DLL
 	m_bEffectsThinking = false;
 	m_iChargeEffectBase = 0;
+	m_pSoundCur = NULL;
+	f_ChargeSoundStartTime = 0.0f;
+#endif
+	
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Destructor.
+//-----------------------------------------------------------------------------
+CTFParticleCannon::~CTFParticleCannon()
+{
+#ifdef CLIENT_DLL
+	if (m_pSoundCur) {
+		CSoundEnvelopeController::GetController().SoundDestroy(m_pSoundCur);
+		m_pSoundCur = NULL;
+	}
 #endif
 }
 
@@ -205,6 +221,10 @@ void CTFParticleCannon::ItemPostFrame( void )
 		m_bEffectsThinking = true;
 		SetContextThink( &CTFParticleCannon::ClientEffectsThink, gpGlobals->curtime + rand() % 5, "PC_EFFECTS_THINK" );
 	}
+	
+	if ( m_flChargeBeginTime ) {
+		PlayChargeSound();
+	}
 #endif
 }
 
@@ -278,7 +298,11 @@ void CTFParticleCannon::SecondaryAttack( void )
 		pPlayer->DoAnimationEvent( PLAYERANIMEVENT_ATTACK_PRIMARY_SUPER );
 	}
 
-	WeaponSound( SPECIAL1 );
+#ifdef CLIENT_DLL
+	f_ChargeSoundStartTime = 0;
+	//PlayChargeSound();
+#endif
+	//WeaponSound( SPECIAL1 );
 
 	pPlayer->m_Shared.AddCond( TF_COND_AIMING );
 	pPlayer->TeamFortress_SetSpeed();
@@ -297,6 +321,36 @@ void CTFParticleCannon::CreateChargeEffect()
 	{
 		DispatchParticleEffect( "drg_cowmangler_muzzleflash_chargeup", PATTACH_POINT_FOLLOW, GetAppropriateWorldOrViewModel(), "muzzle", GetParticleColor( 1 ), GetParticleColor( 2 ) );
 	}
+}
+
+
+void CTFParticleCannon::PlayChargeSound() {
+	//do not try to start playing the sound if we are not charging (but still stop playing it)
+	if (!m_flChargeBeginTime) {
+		if (m_pSoundCur)
+		{
+			CSoundEnvelopeController& controller = CSoundEnvelopeController::GetController();
+			controller.SoundDestroy(m_pSoundCur);
+			m_pSoundCur = NULL;
+		}
+		return;
+	}
+	//do nothing if we're already playing a shot
+	if (f_ChargeSoundStartTime)return;
+	Msg("playing charge sound\n");
+	CSoundEnvelopeController& controller = CSoundEnvelopeController::GetController();
+	if (m_pSoundCur)
+	{
+		controller.SoundDestroy(m_pSoundCur);
+		m_pSoundCur = NULL;
+	}
+
+	float flTotalChargeTime = gpGlobals->curtime - m_flChargeBeginTime;
+	float fPitch = GetChargeMaxTime() / GetChargeForceReleaseTime();
+	CLocalPlayerFilter filter;
+	m_pSoundCur = controller.SoundCreate(filter, entindex(), GetShootSound(SPECIAL1));
+	controller.Play(m_pSoundCur, 1.0, 100 * fPitch, flTotalChargeTime* fPitch);
+	f_ChargeSoundStartTime = m_flChargeBeginTime;
 }
 #endif
 
@@ -342,7 +396,7 @@ void CTFParticleCannon::FireChargedShot()
 	float flFireDelay = ApplyFireDelay( m_pWeaponInfo->GetWeaponData( m_iWeaponMode ).m_flTimeFireDelay );
 
 	m_flNextPrimaryAttack = gpGlobals->curtime + flFireDelay;
-	m_flNextSecondaryAttack = gpGlobals->curtime + ApplyFireDelay(1.6f); //time equal to the length of the sound effect, minus 2 seconds (plus a bit of safety margin of error). a bit hacky, but if WeaponSound is fired with the same sound already playing it won't play. You might think to use StopWeaponSound before calling, but that results in no sound being played at all
+	m_flNextSecondaryAttack = gpGlobals->curtime + flFireDelay;
 	
 	SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration() );
 

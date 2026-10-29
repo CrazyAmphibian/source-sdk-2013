@@ -33,6 +33,7 @@ public:
 	DECLARE_PREDICTABLE();
 
 	CTFParticleCannon();
+	~CTFParticleCannon();
 
 	// Server specific.
 #ifdef GAME_DLL
@@ -76,6 +77,7 @@ public:
 	void			StartEffects( void );
 	void			ClientEffectsThink( void );
 	void			CreateChargeEffect( void );
+	void			PlayChargeSound( void );
 
 	virtual void	DispatchMuzzleFlash( const char* effectName, C_BaseEntity* pAttachEnt );
 	virtual bool	ShouldPlayClientReloadSound() { return true; }
@@ -109,6 +111,8 @@ private:
 	CNetworkVar( float, m_flChargeBeginTime );
 	CNetworkVar( int, m_iChargeEffect );
 	bool m_bChargedShot;
+	CSoundPatch* m_pSoundCur; //for playing the charged shot sound.
+	float f_ChargeSoundStartTime; //checking if the sound has started playing so we don't play it again.
 
 
 #ifdef CLIENT_DLL
