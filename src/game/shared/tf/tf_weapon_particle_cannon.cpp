@@ -215,15 +215,10 @@ void CTFParticleCannon::ItemPostFrame( void )
 	}
 
 #ifdef CLIENT_DLL
-
 	if ( !m_bEffectsThinking )
 	{
 		m_bEffectsThinking = true;
 		SetContextThink( &CTFParticleCannon::ClientEffectsThink, gpGlobals->curtime + rand() % 5, "PC_EFFECTS_THINK" );
-	}
-	
-	if ( m_flChargeBeginTime ) {
-		PlayChargeSound();
 	}
 #endif
 }
@@ -254,6 +249,9 @@ bool CTFParticleCannon::CanPerformSecondaryAttack() {
 	if (m_flChargeBeginTime) {
 		return false;
 	}
+	if (m_flNextSecondaryAttack > gpGlobals->curtime) {
+		return false;
+	}
 	return BaseClass::CanPerformSecondaryAttack();
 }
 
@@ -272,6 +270,9 @@ void CTFParticleCannon::SecondaryAttack( void )
 
 	// Are we capable of firing again?
 	if ( m_flNextPrimaryAttack > gpGlobals->curtime )
+		return;
+
+	if (m_flNextSecondaryAttack > gpGlobals->curtime)
 		return;
 
 	if ( m_flChargeBeginTime > 0 )
@@ -299,8 +300,7 @@ void CTFParticleCannon::SecondaryAttack( void )
 	}
 
 #ifdef CLIENT_DLL
-	f_ChargeSoundStartTime = 0;
-	//PlayChargeSound();
+	PlayChargeSound();
 #endif
 	//WeaponSound( SPECIAL1 );
 
@@ -325,19 +325,14 @@ void CTFParticleCannon::CreateChargeEffect()
 
 
 void CTFParticleCannon::PlayChargeSound() {
-	//do not try to start playing the sound if we are not charging (but still stop playing it)
-	if (!m_flChargeBeginTime) {
-		if (m_pSoundCur)
-		{
-			CSoundEnvelopeController& controller = CSoundEnvelopeController::GetController();
-			controller.SoundDestroy(m_pSoundCur);
-			m_pSoundCur = NULL;
-		}
+	//do not try to start playing the sound if we are not charging
+	if (!m_flChargeBeginTime)
 		return;
-	}
+	
 	//do nothing if we're already playing a shot
-	if (f_ChargeSoundStartTime)return;
-	Msg("playing charge sound\n");
+	if ( f_ChargeSoundStartTime > gpGlobals->curtime + GetChargeForceReleaseTime() )
+		return;
+	
 	CSoundEnvelopeController& controller = CSoundEnvelopeController::GetController();
 	if (m_pSoundCur)
 	{
